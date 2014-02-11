@@ -65,6 +65,10 @@
             [_messageView setMessage:msg];
         }];
     }
+
+  // Add by ZhaoWendeng --->
+  [self downloadMessageAttachments:_message];
+  // <---
 }
 
 - (void) setMessage:(MCOIMAPMessage *)message
@@ -271,5 +275,33 @@ typedef void (^DownloadCallback)(NSError * error);
 
     return destData;
 }
+
+  // Add by ZhaoWendeng --->
+- (void) downloadMessageAttachments:(MCOIMAPMessage*)message {
+  if ([message.attachments count] > 0) {
+
+    for (int k = 0; k < [message.attachments count]; k++) {
+      MCOIMAPPart *part = [message.attachments objectAtIndex:k];
+      MCOIMAPFetchContentOperation *mcop = [_session fetchMessageAttachmentByUIDOperationWithFolder:@"INBOX" uid:message.uid partID:part.partID encoding:part.encoding];
+      [mcop start:^(NSError *error, NSData *data) {
+        if (error != nil) {
+          NSLog(@"error:%@", error);
+          return;
+        }
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+        NSString *saveDirectory = [paths objectAtIndex:0];
+        NSString *attachmentPath = [saveDirectory stringByAppendingPathComponent:part.filename];
+        BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:attachmentPath];
+        if (fileExists) {
+          NSLog(@"File already exists!");
+        }
+        else{
+          [data writeToFile:attachmentPath atomically:YES];
+        }
+      }];
+    }
+  }
+}
+  // <---
 
 @end
